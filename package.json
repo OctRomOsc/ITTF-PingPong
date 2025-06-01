@@ -1,0 +1,66 @@
+{
+  "name": "ittfpingpong",
+  "version": "1.0.0",
+  "description": "Unofficial API to retrieve player rankings and match statistics from ITTF (International Table Tennis Federation) affiliated members and events.",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=10.7.0"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "vitest --coverage ",
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
+    "lint": "eslint --fix",
+    "prepare": "npm run build",
+    "test:browser": "vitest --workspace=..\\vitest.workspace.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OctRomOsc/ITTF-PingPong.git"
+  },
+  "keywords": [
+    "ITTF",
+    "International Table Tennis Federation",
+    "Table Tennis",
+    "Ping Pong",
+    "Rankings",
+    "Statistics",
+    "Scores"
+  ],
+  "author": "OctRomOsc",
+  "license": "",
+  "bugs": {
+    "url": "https://github.com/OctRomOsc/ITTF-PingPong/issues"
+  },
+  "homepage": "https://github.com/OctRomOsc/ITTF-PingPong#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "@swc/core": "^1.11.29",
+    "@types/jsdom": "^21.1.7",
+    "@vitest/coverage-v8": "^3.1.4",
+    "@vitest/ui": "^3.1.4",
+    "eslint": "^9.27.0",
+    "eslint-plugin-import": "^2.31.0",
+    "globals": "^16.2.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.0",
+    "vitest": "^3.1.4"
+  },
+  "dependencies": {
+    "jsdom": "^26.1.0"
+  }
+}
