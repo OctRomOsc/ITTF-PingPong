@@ -1,24 +1,69 @@
 import jsdom from "jsdom";
 import getWeek from "./getWeek";
 
-type currentGender = 'M' | 'W' | 'X'; // Man, woman, mixed (doubles only)
-type currentCategory = 'S' | 'D' | 'DI'; // Singles, doubles ranking (pairs), doubles ranking (individual)
-type currentType = 'YOU' | 'SEN'; // All 3 youth competition types lumped together, Seniors
 
-export interface RankEntry {
-    name : string,
-    rank : string,
-    assoc : string,
-    points : string
-};
-
-export type Rankings = RankEntry[];
 
 export class ittfPingPong {
     private currentRankingsUrl: string = 'https://www.ittf.com/wp-content/uploads';
+    public static currentGender = ['M', 'W', 'X'] as const; // Man, woman, mixed (doubles only)
+    public static currentCategory = ['S', 'D', 'DI'] as const; // Singles, doubles ranking (pairs), doubles ranking (individual)
+    public static currentType = ['YOU', 'SEN'] as const; // All 3 youth competition types lumped together, Seniors
+
+
+    static isValidGender(value: any): value is typeof ittfPingPong.currentGender[number] {
+        return (this.currentGender as readonly string[]).includes(value);
+    }
+
+    static isValidCategory(value: any): value is typeof ittfPingPong.currentCategory[number] {
+        return (this.currentCategory as readonly string[]).includes(value);
+    }
+
+    static isValidType(value: any): value is typeof ittfPingPong.currentType[number] {
+        return (this.currentType as readonly string[]).includes(value);
+    }
+
+    private isPositiveInteger(n: number): n is number {
+        return Number.isInteger(n) && n > 0;
+        }
+
+    /**
+   * Fetch the current rankings.
+   * @param type - The type of rankings ('YOU' | 'SEN') All 3 youth competition types lumped together (U15, U18, U21), Seniors
+   * @param gender - Gender ('M' | 'W' | 'X') Man, woman, mixed (doubles only)
+   * @param category - Category ('S' | 'D' | 'DI') Singles, doubles ranking (pairs), doubles ranking (individual)
+   * @param topN - Only positive integers (e.g., 1, 2, 3, ...) or 'all'. Defaults to 'all'.
+   */
     
-    async currentRankings( type: currentType, gender: currentGender, category: currentCategory, topN :number | 'all' ='all') {
+    async currentRankings( type: typeof ittfPingPong.currentType[number],
+         gender: typeof ittfPingPong.currentGender[number],
+          category: typeof ittfPingPong.currentCategory[number],
+           topN : number | 'all' ='all') : Promise<Rankings> {
         try {
+
+            // Validate 'type'
+            if (!ittfPingPong.isValidType(type)) {
+                throw new Error(`Invalid type: ${type}. Valid options are: ${ittfPingPong.currentType.join(', ')}`);
+            }
+
+            // Validate 'gender'
+            if (!ittfPingPong.isValidGender(gender)) {
+                throw new Error(`Invalid gender: ${gender}. Valid options are: ${ittfPingPong.currentGender.join(', ')}`);
+            }
+
+            // Validate 'category'
+            if (!ittfPingPong.isValidCategory(category)) {
+                throw new Error(`Invalid category: ${category}. Valid options are: ${ittfPingPong.currentCategory.join(', ')}`);
+            }
+            if (topN !== 'all') {
+                if (!this.isPositiveInteger(topN)) {
+                  throw new Error('topN must be a positive integer or "all"');
+                }
+            }
+
+            // Check for specific rule violation
+            if (gender === 'X' && !['D', 'DI'].includes(category)) {
+                throw new Error("Mixed gender ('X') requires a doubles category ('D' or 'DI').");
+            }
             const currentDate : Date = new Date();
             const year : number = currentDate.getFullYear();
             const month : number = (currentDate.getMonth()+1)
@@ -63,9 +108,6 @@ export class ittfPingPong {
             
             const rows : Array<Element> = Array.from(table[0].getElementsByClassName("rank"))
             
-            rows.pop()
-            
-            
             const ranks : Rankings = rows.map(td => {
                 return {rank : td.textContent!.trim(),
                      name : td.parentElement!.nextElementSibling!.textContent!.trim(),
@@ -82,8 +124,9 @@ export class ittfPingPong {
 
             return topRanks;
         } catch (err) {
-            return "Error fetching ranking data.";
+            throw err;
           }
     };
+    
 
 };
