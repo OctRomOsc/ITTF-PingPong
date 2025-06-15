@@ -19,7 +19,7 @@
     "dist"
   ],
   "scripts": {
-    "test": "vitest --coverage ",
+    "test": "vitest run --coverage ",
     "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
     "lint": "eslint --fix",
     "prepare": "npm run build"
