@@ -28,13 +28,13 @@ jobs:
         npm test
 
     - name: Upload JUnit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: junit-report
         path: ./junit-report.xml
 
     - name: Upload JSON report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: json-report
         path: ./json-report.json
