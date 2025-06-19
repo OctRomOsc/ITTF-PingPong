@@ -1,6 +1,6 @@
 {
   "name": "ittf-pingpong",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Unofficial API to retrieve player rankings and statistics from ITTF (International Table Tennis Federation) affiliated members and events.",
   "engines": {
     "node": ">=18.0.0",
