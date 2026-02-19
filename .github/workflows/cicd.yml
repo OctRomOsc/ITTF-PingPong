@@ -7,36 +7,106 @@ on:
 
 jobs:
   test:
-    if:  github.event.before != github.event.after  # Run if files changed
+    if: github.event.before != github.event.after # Run if files changed
     runs-on: ubuntu-latest
+    environment: test
+    env:
+      GIST_ID: ${{ secrets.GIST_ID }} # Optional: pre-existing Gist ID
+      GH_TOKEN: ${{ secrets.GIST_TOKEN }} # Gist access token
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "18"
 
-    - name: Install dependencies
-      run: |
-        npm ci # Clean Install
+      - name: Install dependencies
+        run: |
+          npm ci # Clean Install
 
-    - name: Run tests
-      run: |
-        npm test
+      - name: Run tests
+        run: |
+          npm test
 
-    - name: Upload JUnit report
-      uses: actions/upload-artifact@v4
-      with:
-        name: junit-report
-        path: ./junit-report.xml
+      - name: Check Gist existence or create if needed
+        id: gist_check
+        run: |
+          # Use the secret if it exists, otherwise it's an empty string
+          CURRENT_GIST_ID="${{ secrets.GIST_ID }}"
 
-    - name: Upload JSON report
-      uses: actions/upload-artifact@v4
-      with:
-        name: json-report
-        path: ./json-report.json
+          if [ -z "$CURRENT_GIST_ID" ]; then
+            echo "GIST_ID is not set, creating new Gist..."
+            echo "{}" > json-report.json
+            echo "{}" > coverage-summary.json
+            # Capture only the URL/ID from the output
+            GIST_URL=$(gh gist create json-report.json coverage-summary.json -d "Test & Coverage badges" --public)
+            CURRENT_GIST_ID=$(echo "$GIST_URL" | grep -oE '[a-f0-9]{20,}')
+          else
+            if gh gist view "$CURRENT_GIST_ID" --silent; then
+              echo "Gist exists: $CURRENT_GIST_ID"
+            else
+              echo "Gist ID provided but does not exist. Creating new..."
+              echo "{}" > json-report.json
+              echo "{}" > coverage-summary.json
+              GIST_URL=$(gh gist create json-report.json coverage-summary.json -d "Test & Coverage badges" --public)
+              CURRENT_GIST_ID=$(echo "$GIST_URL" | grep -oE '[a-f0-9]{20,}')
+            fi
+          fi
 
-  
+          echo "GIST_ID=$CURRENT_GIST_ID" >> $GITHUB_OUTPUT
+
+      - name: Generate badge JSON files
+        run: |
+          # Extract total tests and passed tests
+          REPORT_PATH="./coverage/test-reporters/json-report.json"
+          COVERAGE_PATH="./coverage/coverage-summary.json"
+
+          TOTAL=$(jq '.numTotalTests' $REPORT_PATH)
+          PASSED=$(jq '.numPassedTests' $REPORT_PATH)
+          PERCENT=$(jq '.numPassedTests / .numTotalTests * 100' $REPORT_PATH)
+          COVERAGE=$(jq '.total.statements.pct' $COVERAGE_PATH)  # convert to integer
+
+          # Decide color based on pass/fail
+          TESTS_COLOR=$([ "$TOTAL" -eq "$PASSED" ] && echo "#4c1" || echo "red")
+          if [ "$COVERAGE" -ge 90 ]; then
+            COVERAGE_COLOR="#4c1"
+          elif [ "$COVERAGE" -ge 80 ]; then
+            COVERAGE_COLOR="green"
+          elif [ "$COVERAGE" -ge 70 ]; then
+            COVERAGE_COLOR="yellow"
+          elif [ "$COVERAGE" -ge 50 ]; then
+            COVERAGE_COLOR="orange"
+          else
+            COVERAGE_COLOR="red"
+          fi
+
+          # Create badge JSON for tests
+          cat > json-report.json <<EOF
+          {
+            "schemaVersion": 1,
+            "label": "tests",
+            "message": "$PASSED/$TOTAL",
+            "color": "$TESTS_COLOR"
+          }
+          EOF
+
+          # Create badge JSON for coverage
+          cat > coverage-summary.json <<EOF
+          {
+            "schemaVersion": 1,
+            "label": "coverage",
+            "message": "$COVERAGE%",
+            "color": "$COVERAGE_COLOR"
+          }
+          EOF
+      - name: Update reports in Gist
+        run: |
+          # Use the ID from the check step
+          GIST_ID="${{ steps.gist_check.outputs.GIST_ID }}"
+          
+          # Edit each file specifically
+          gh gist edit "$GIST_ID" -f json-report.json json-report.json
+          gh gist edit "$GIST_ID" -f coverage-summary.json coverage-summary.json

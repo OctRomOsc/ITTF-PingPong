@@ -1,6 +1,6 @@
 {
   "name": "ittf-pingpong",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Unofficial API to retrieve player rankings and statistics from ITTF (International Table Tennis Federation) affiliated members and events.",
   "engines": {
     "node": ">=18.0.0",
@@ -19,10 +19,22 @@
     "dist"
   ],
   "scripts": {
-    "test": "vitest run --coverage ",
-    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest --coverage --ui",
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc -p tsconfig.cjs.json && mv dist/cjs/index.js dist/cjs/index.cjs",
+    "build:esm": "tsc -p tsconfig.esm.json && mv dist/esm/index.js dist/esm/index.mjs && cp globals.d.ts dist/types/globals.d.ts && node -e \"const f='dist/types/index.d.ts', c=require('fs').readFileSync(f,'utf8'); require('fs').writeFileSync(f, '/// <reference path=\\\"./globals.d.ts\\\" />\\n' + c)\"",
     "lint": "eslint --fix",
+    "prepack": "npm run build && clean-package",
+    "postpack": "clean-package restore",
     "prepare": "npm run build"
+  },
+  "clean-package": {
+    "remove": [
+      "scripts",
+      "clean-package",
+      "devDependencies"
+    ]
   },
   "repository": {
     "type": "git",
@@ -30,7 +42,9 @@
   },
   "keywords": [
     "ITTF",
+    "WTT",
     "International Table Tennis Federation",
+    "World Table Tennis",
     "Table Tennis",
     "Ping Pong",
     "Rankings",
@@ -46,20 +60,21 @@
   "devDependencies": {
     "@eslint/js": "^9.27.0",
     "@swc/core": "^1.11.29",
-    "@types/jsdom": "^21.1.7",
     "@vitest/coverage-v8": "^3.1.4",
     "@vitest/ui": "^3.1.4",
+    "clean-package": "^2.2.0",
     "eslint": "^9.27.0",
     "eslint-plugin-import": "^2.31.0",
     "globals": "^16.2.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.0",
     "vitest": "^3.1.4"
   },
   "dependencies": {
-    "jsdom": "^26.1.0"
+    "cuimp": "^1.8.0"
   }
 }
